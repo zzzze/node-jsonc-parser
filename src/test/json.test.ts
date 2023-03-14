@@ -153,7 +153,8 @@ suite('JSON', () => {
 		assertScanError('/* this is a \ncomment', ScanError.UnexpectedEndOfComment, SyntaxKind.BlockCommentTrivia);
 
 		// broken comment
-		assertKinds('/ ttt', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
+		// assertKinds('/ ttt', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
+		assertKinds('/ ttt', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.MaybeObjectPropertyKey);
 	});
 
 	test('strings', () => {
@@ -218,10 +219,10 @@ suite('JSON', () => {
 			SyntaxKind.NullKeyword);
 
 		// invalid words
-		assertKinds('nulllll', SyntaxKind.Unknown);
-		assertKinds('True', SyntaxKind.Unknown);
+		assertKinds('nulllll', SyntaxKind.MaybeObjectPropertyKey);
+		assertKinds('True', SyntaxKind.MaybeObjectPropertyKey);
 		assertKinds('foo-bar', SyntaxKind.Unknown);
-		assertKinds('foo bar', SyntaxKind.Unknown, SyntaxKind.Trivia, SyntaxKind.Unknown);
+		assertKinds('foo bar', SyntaxKind.MaybeObjectPropertyKey, SyntaxKind.Trivia, SyntaxKind.MaybeObjectPropertyKey);
 
 		assertKinds('false//hello', SyntaxKind.FalseKeyword, SyntaxKind.LineCommentTrivia);
 	});
@@ -265,6 +266,10 @@ suite('JSON', () => {
 		assertValidParse('{ "hello": { "again": { "inside": 5 }, "world": 1 }}', { hello: { again: { inside: 5 }, world: 1 } });
 		assertValidParse('{ "foo": /*hello*/true }', { foo: true });
 		assertValidParse('{ "": true }', { '': true });
+		assertValidParse('{ foo: true }', { foo: true });
+		assertValidParse('{ hello: { again: { inside: 5 }, world: 1 }}', { hello: { again: { inside: 5 }, world: 1 } });
+		assertValidParse('{ $hello: { _again: { $_inside_$: 5 }, w0r1d: 1 }}', { $hello: { _again: { $_inside_$: 5 }, w0r1d: 1 } });
+		assertValidParse('{ true: true, false: false, null: null }', { true: true, false: false, null: null });
 	});
 
 	test('parse: arrays', () => {
@@ -277,15 +282,19 @@ suite('JSON', () => {
 	test('parse: objects with errors', () => {
 		assertInvalidParse('{,}', {});
 		assertInvalidParse('{ "foo": true, }', { foo: true });
+		assertInvalidParse('{ "foo": true, "bar": baz }', { foo: true });
 		assertInvalidParse('{ "bar": 8 "xoo": "foo" }', { bar: 8, xoo: 'foo' });
 		assertInvalidParse('{ ,"bar": 8 }', { bar: 8 });
 		assertInvalidParse('{ ,"bar": 8, "foo" }', { bar: 8 });
 		assertInvalidParse('{ "bar": 8, "foo": }', { bar: 8 });
 		assertInvalidParse('{ 8, "foo": 9 }', { foo: 9 });
+		assertInvalidParse('{ 8foo: true }', {});
+		assertInvalidParse('{ fo o: true }', { fo: true });
 	});
 
 	test('parse: array with errors', () => {
 		assertInvalidParse('[,]', []);
+		assertInvalidParse('[ foo ]', []);
 		assertInvalidParse('[ 1 2, 3 ]', [1, 2, 3]);
 		assertInvalidParse('[ ,1, 2, 3 ]', [1, 2, 3]);
 		assertInvalidParse('[ ,1, 2, 3, ]', [1, 2, 3]);
@@ -293,6 +302,7 @@ suite('JSON', () => {
 
 	test('parse: errors', () => {
 		assertInvalidParse('', undefined);
+		assertInvalidParse('foo', undefined);
 		assertInvalidParse('1,1', 1);
 	});
 
@@ -567,6 +577,9 @@ suite('JSON', () => {
 				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 18, arg: ',' },
 				{ id: 'onObjectProperty', text: '"c"', startLine: 0, startCharacter: 20, arg: 'c', path: [0] },
 				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 31, arg: ',' },
+				{ id: 'onObjectProperty', text: 'true', startLine: 0, startCharacter: 33, arg: 'true', path: [0] },
+				{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 37, arg: ':' },
+				{ id: 'onLiteralValue', text: '"d"', startLine: 0, startCharacter: 39, arg: 'd', path: [0, "true"] },
 				{ id: 'onSeparator', text: ',', startLine: 0, startCharacter: 43, arg: ',' },
 				{ id: 'onObjectProperty', text: '"e"', startLine: 0, startCharacter: 45, arg: 'e', path: [0] },
 				{ id: 'onSeparator', text: ':', startLine: 0, startCharacter: 48, arg: ':' },
@@ -584,7 +597,8 @@ suite('JSON', () => {
 				{ error: ParseErrorCode.PropertyNameExpected, offset: 17, length: 1, startLine: 0, startCharacter: 17 },
 				{ error: ParseErrorCode.ValueExpected, offset: 18, length: 1, startLine: 0, startCharacter: 18 },
 				{ error: ParseErrorCode.ColonExpected, offset: 24, length: 1, startLine: 0, startCharacter: 24 },
-				{ error: ParseErrorCode.PropertyNameExpected, offset: 33, length: 4, startLine: 0, startCharacter: 33 },
+				{ error: ParseErrorCode.CommaExpected, offset: 42, length: 1, startLine: 0, startCharacter: 42 },
+				{ error: ParseErrorCode.PropertyNameExpected, offset: 42, length: 1, startLine: 0, startCharacter: 42 },
 				{ error: ParseErrorCode.ValueExpected, offset: 43, length: 1, startLine: 0, startCharacter: 43 },
 				{ error: ParseErrorCode.ValueExpected, offset: 50, length: 1, startLine: 0, startCharacter: 50 },
 				{ error: ParseErrorCode.CommaExpected, offset: 58, length: 1, startLine: 0, startCharacter: 58 },

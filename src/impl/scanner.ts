@@ -339,6 +339,9 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 						case 'false': return token = SyntaxKind.FalseKeyword;
 						case 'null': return token = SyntaxKind.NullKeyword;
 					}
+					if (isIdentifier(value)) {
+						return token = SyntaxKind.MaybeObjectPropertyKey;
+					}
 					return token = SyntaxKind.Unknown;
 				}
 				// some
@@ -366,6 +369,27 @@ export function createScanner(text: string, ignoreTrivia: boolean = false): JSON
 		return true;
 	}
 
+	function isIdentifier(value: string) {
+		return value.split('').every((char, i) => isIdentifierCharacter(char.charCodeAt(0), i === 0));
+	}
+
+	function isIdentifierCharacter(code: CharacterCodes, firstChar = false) {
+		if (code >= CharacterCodes.a && code <= CharacterCodes.z) {
+			return true;
+		}
+		if (code >= CharacterCodes.A && code <= CharacterCodes.Z) {
+			return true;
+		}
+		switch (code) {
+			case CharacterCodes.underscore:
+			case CharacterCodes.dollar:
+				return true;
+		}
+		if (!firstChar && code >= CharacterCodes._0 && code <= CharacterCodes._9) {
+			return true;
+		}
+		return false;
+	}
 
 	function scanNextNonTrivia(): SyntaxKind {
 		let result: SyntaxKind;
@@ -485,6 +509,8 @@ const enum CharacterCodes {
 	openBracket = 0x5B,           // [
 	plus = 0x2B,                  // +
 	slash = 0x2F,                 // /
+	underscore = 0x5F,            // _
+	dollar = 0x24,                // $
 
 	formFeed = 0x0C,              // \f
 	tab = 0x09,                   // \t

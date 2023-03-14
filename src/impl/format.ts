@@ -164,6 +164,17 @@ export function format(documentText: string, range: Range | undefined, options: 
 						replaceContent = '';
 					}
 					break;
+				case SyntaxKind.MaybeObjectPropertyKey:
+					if (options.keepLines && numberLineBreaks > 0) {
+						replaceContent = newLinesAndIndent();
+					} else if (secondToken === SyntaxKind.ColonToken && !needsLineBreak) {
+						replaceContent = '';
+					} else if ((secondToken === SyntaxKind.LineCommentTrivia || secondToken === SyntaxKind.BlockCommentTrivia) && !needsLineBreak) {
+						replaceContent = ' ';
+					} else if (secondToken !== SyntaxKind.CommaToken && secondToken !== SyntaxKind.EOF) {
+						hasError = true;
+					}
+					break;
 				case SyntaxKind.NullKeyword:
 				case SyntaxKind.TrueKeyword:
 				case SyntaxKind.FalseKeyword:

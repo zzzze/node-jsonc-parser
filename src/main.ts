@@ -42,7 +42,8 @@ export const enum SyntaxKind {
 	LineBreakTrivia = 14,
 	Trivia = 15,
 	Unknown = 16,
-	EOF = 17
+	EOF = 17,
+	MaybeObjectPropertyKey = 18
 }
 
 /**

@@ -77,6 +77,34 @@ suite('JSON - formatter', () => {
 
 		format(content, expected);
 	});
+	test('object - single property - 2', () => {
+		const content = [
+			'{x : 1}'
+		].join('\n');
+
+		const expected = [
+			'{',
+			'  x: 1',
+			'}'
+		].join('\n');
+
+		format(content, expected);
+	});
+	test('object - multiple properties - 2', () => {
+		const content = [
+			'{x : 1,  y : "foo", z  : true}'
+		].join('\n');
+
+		const expected = [
+			'{',
+			'  x: 1,',
+			'  y: "foo",',
+			'  z: true',
+			'}'
+		].join('\n');
+
+		format(content, expected);
+	});
 	test('object - nesting', () => {
 		const content = [
 			'{"x" : {  "y" : { "z"  : { }}, "a": true}}'

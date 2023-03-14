@@ -415,7 +415,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 
 	const disallowComments = options && options.disallowComments;
 	const allowTrailingComma = options && options.allowTrailingComma;
-	function scanNext(): SyntaxKind {
+	function scanNext({ acceptMaybeObjectPropertyKey }: { acceptMaybeObjectPropertyKey?: boolean } = {}): SyntaxKind {
 		while (true) {
 			const token = _scanner.scan();
 			switch (_scanner.getTokenError()) {
@@ -450,6 +450,12 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 					}
 					break;
 				case SyntaxKind.Unknown:
+					handleError(ParseErrorCode.InvalidSymbol);
+					break;
+				case SyntaxKind.MaybeObjectPropertyKey:
+					if (acceptMaybeObjectPropertyKey) {
+						return token;
+					}
 					handleError(ParseErrorCode.InvalidSymbol);
 					break;
 				case SyntaxKind.Trivia:
@@ -520,7 +526,13 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 	}
 
 	function parseProperty(): boolean {
-		if (_scanner.getToken() !== SyntaxKind.StringLiteral) {
+		if (![
+			SyntaxKind.StringLiteral,
+			SyntaxKind.TrueKeyword,
+			SyntaxKind.FalseKeyword,
+			SyntaxKind.NullKeyword,
+			SyntaxKind.MaybeObjectPropertyKey,
+		].includes(_scanner.getToken())) {
 			handleError(ParseErrorCode.PropertyNameExpected, [], [SyntaxKind.CloseBraceToken, SyntaxKind.CommaToken]);
 			return false;
 		}
@@ -541,7 +553,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 
 	function parseObject(): boolean {
 		onObjectBegin();
-		scanNext(); // consume open brace
+		scanNext({ acceptMaybeObjectPropertyKey: true }); // consume open brace
 
 		let needsComma = false;
 		while (_scanner.getToken() !== SyntaxKind.CloseBraceToken && _scanner.getToken() !== SyntaxKind.EOF) {
@@ -550,7 +562,7 @@ export function visit(text: string, visitor: JSONVisitor, options: ParseOptions 
 					handleError(ParseErrorCode.ValueExpected, [], []);
 				}
 				onSeparator(',');
-				scanNext(); // consume comma
+				scanNext({ acceptMaybeObjectPropertyKey: true }); // consume comma
 				if (_scanner.getToken() === SyntaxKind.CloseBraceToken && allowTrailingComma) {
 					break;
 				}
